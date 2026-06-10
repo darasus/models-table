@@ -22,9 +22,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { filterModels } from "@/lib/filter-models"
 import { filterModelsForSearch } from "@/lib/search-models"
 import type { LlmModel } from "@/lib/types/llm-model"
 import { useLocalStorageState } from "@/hooks/use-local-storage-state"
+import { useModelFilters } from "@/hooks/use-model-filters"
+import { ModelsTableFilters } from "@/components/models/models-table-filters"
 
 type ModelsDataTableProps = {
   data: LlmModel[]
@@ -41,13 +44,14 @@ export function ModelsDataTable({ data }: ModelsDataTableProps) {
     { id: "intelligenceIndex", desc: true },
   ])
   const [globalFilter, setGlobalFilter] = useQueryState("q", searchParser)
+  const { filters, setFilters, resetFilters, activeCount } = useModelFilters()
   const [columnVisibility, setColumnVisibility] =
     useLocalStorageState<VisibilityState>(COLUMN_VISIBILITY_KEY, {})
 
-  const tableData = React.useMemo(
-    () => filterModelsForSearch(data, globalFilter),
-    [data, globalFilter]
-  )
+  const tableData = React.useMemo(() => {
+    const filtered = filterModels(data, filters)
+    return filterModelsForSearch(filtered, globalFilter)
+  }, [data, filters, globalFilter])
 
   const table = useReactTable({
     data: tableData,
@@ -83,6 +87,13 @@ export function ModelsDataTable({ data }: ModelsDataTableProps) {
         </p>
         <DataTableViewOptions table={table} />
       </div>
+      <ModelsTableFilters
+        data={data}
+        filters={filters}
+        onFiltersChange={setFilters}
+        onReset={resetFilters}
+        activeCount={activeCount}
+      />
       <div className="overflow-hidden rounded-md border">
         <Table>
           <TableHeader>
